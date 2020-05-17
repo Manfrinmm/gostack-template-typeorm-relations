@@ -26,7 +26,14 @@ app.use((err: Error, request: Request, response: Response, _: NextFunction) => {
     });
   }
 
-  console.log(err);
+  if (process.env.NODE_ENV === 'development') {
+    console.log(err);
+
+    return response.status(500).json({
+      type: 'error',
+      message: err.message,
+    });
+  }
 
   return response.status(500).json({
     status: 'error',
