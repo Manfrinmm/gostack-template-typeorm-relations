@@ -34,29 +34,37 @@ class CreateProductService {
     const customer = await this.customersRepository.findById(customer_id);
 
     if (!customer) {
-      throw new AppError('Customer not found', 400);
+      throw new AppError('Customer not found');
     }
 
     const productsFiltered = await this.productsRepository.findAllById(
       products,
     );
 
-    console.log('ids', productsFiltered);
-
-    if (!productsFiltered) {
-      throw new AppError('Products not found', 400);
+    if (productsFiltered.length < 1) {
+      throw new AppError('Products not found');
     }
 
-    const productsFormatted = productsFiltered.map(product => ({
-      product_id: product.id,
-      price: product.price,
-      quantity: product.quantity,
-    }));
+    const productsFormatted = productsFiltered.map((product, index) => {
+      const { quantity } = products[index];
+
+      if (quantity > product.quantity) {
+        throw new AppError('Product with insufficient quantities');
+      }
+
+      return {
+        product_id: product.id,
+        price: product.price,
+        quantity,
+      };
+    });
 
     const order = await this.ordersRepository.create({
       customer,
       products: productsFormatted,
     });
+
+    await this.productsRepository.updateQuantity(products);
 
     return order;
   }
